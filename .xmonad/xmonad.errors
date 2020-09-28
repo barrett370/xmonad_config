@@ -1,7 +1,0 @@
-
-xmonad.hs:109:1: warning: [-Wtabs]
-    Tab character found here, and in one further location.
-    Please use spaces instead.
-    |
-109 |           spawnOnce "picom --config /home/sam/.config/picom/config.conf &"
-    | ^^^^^^^^

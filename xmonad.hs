@@ -25,6 +25,7 @@ import qualified Data.Map as M
 
     -- Hooks
 import XMonad.Hooks.DynamicLog (dynamicLogWithPP, wrap, xmobarPP, xmobarColor, shorten, PP(..))
+import XMonad.Hooks.DynamicBars
 import XMonad.Hooks.EwmhDesktops  -- for some fullscreen events, also for xcomposite in obs.
 import XMonad.Hooks.FadeInactive
 import XMonad.Hooks.ManageDocks (avoidStruts, docksEventHook, manageDocks, ToggleStruts(..))
@@ -106,8 +107,8 @@ windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace
 
 myStartupHook :: X ()
 myStartupHook = do
-	  spawnOnce "picom --config /home/sam/.config/picom/config.conf &"
-	  spawnOnce "xrandr --output Virtual-1 --mode 1920x1200 &"
+          spawnOnce "picom &"
+	  spawnOnce "xrandr --output DP-0 --mode 1920x1200 --right-of HDMI-0 &"
           spawnOnce "nitrogen --restore &"
 
 myColorizer :: Window -> Bool -> X (String, String)
@@ -323,7 +324,7 @@ xmobarEscape = concatMap doubleLts
 myWorkspaces :: [String]
 myWorkspaces = clickable . (map xmobarEscape)
                -- $ ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
-               $ ["dev", "www", "sys", "doc", "vbox", "chat", "mus"]
+               $ ["dev", "www", "sys", "doc", "vbox", "chat", "email", "mus"]
   where
         clickable l = [ "<action=xdotool key super+" ++ show (n) ++ "> " ++ ws ++ " </action>" |
                       (i,ws) <- zip [1..9] l,
@@ -334,13 +335,16 @@ myManageHook = composeAll
      -- using 'doShift ( myWorkspaces !! 7)' sends program to workspace 8!
      -- I'm doing it this way because otherwise I would have to write out
      -- the full name of my workspaces.
-     [ className =? "htop"     --> doShift ( myWorkspaces !! 7 )
-     , title =? "firefox"     --> doShift ( myWorkspaces !! 1 )
-     , className =? "mpv"     --> doShift ( myWorkspaces !! 7 )
+     [
+       (className=? "firefox" <&&> title=? "Email - Samuel Barrett (MSci Comp Sci w Ind Year FT) - Outlook - Mozilla Firefox")     --> doShift ( myWorkspaces !! 6 )
+     , className=? "firefox"      --> doShift ( myWorkspaces !! 1 )
+     , title =? "Microsoft Teams - Preview" --> doShift (myWorkspaces !! 5 )
+     , title =? "Discord" --> doShift (myWorkspaces !! 5 )
      -- , className =? "vlc"     --> doShift ( myWorkspaces !! 7 )
      , title =? "Oracle VM VirtualBox Manager"     --> doFloat
      , className =? "VirtualBox Manager" --> doShift  ( myWorkspaces !! 4 )
      , (className =? "firefox" <&&> resource =? "Dialog") --> doFloat  -- Float Firefox Dialog
+     , (title=? "Microsoft Teams - Preview" <&&> resource =? "Dialog") --> doFloat  -- Float Firefox Dialog
      ] <+> namedScratchpadManageHook myScratchPads
 
 myLogHook :: X ()
@@ -389,8 +393,8 @@ myKeys =
         , ("M-<Space>", sendMessage (MT.Toggle NBFULL) >> sendMessage ToggleStruts) -- Toggles noborder/full
         , ("M-S-<Space>", sendMessage ToggleStruts)         -- Toggles struts
         , ("M-S-n", sendMessage $ MT.Toggle NOBORDERS)      -- Toggles noborder
-        , ("M-<KP_Multiply>", sendMessage (IncMasterN 1))   -- Increase number of clients in master pane
-        , ("M-<KP_Divide>", sendMessage (IncMasterN (-1)))  -- Decrease number of clients in master pane
+        , ("M-<KP_Plus>", sendMessage (IncMasterN 1))   -- Increase number of clients in master pane
+	, ("M-<KP_Divide>", sendMessage (IncMasterN (-1)))  -- Decrease number of clients in master pane
         , ("M-S-<KP_Multiply>", increaseLimit)              -- Increase number of windows
         , ("M-S-<KP_Divide>", decreaseLimit)                -- Decrease number of windows
 
@@ -409,27 +413,10 @@ myKeys =
         , ("M-C-<Return>", namedScratchpadAction myScratchPads "terminal")
         , ("M-C-c", namedScratchpadAction myScratchPads "mocp")
 
-    -- Controls for mocp music player.
-        , ("M-u p", spawn "mocp --play")
-        , ("M-u l", spawn "mocp --next")
-        , ("M-u h", spawn "mocp --previous")
-        , ("M-u <Space>", spawn "mocp --toggle-pause")
-
-    -- Emacs (CTRL-e followed by a key)
-        , ("C-e e", spawn "emacsclient -c -a ''")                            -- start emacs
-        , ("C-e b", spawn "emacsclient -c -a '' --eval '(ibuffer)'")         -- list emacs buffers
-        , ("C-e d", spawn "emacsclient -c -a '' --eval '(dired nil)'")       -- dired emacs file manager
-        , ("C-e i", spawn "emacsclient -c -a '' --eval '(erc)'")             -- erc emacs irc client
-        , ("C-e m", spawn "emacsclient -c -a '' --eval '(mu4e)'")            -- mu4e emacs email client
-        , ("C-e n", spawn "emacsclient -c -a '' --eval '(elfeed)'")          -- elfeed emacs rss client
-        , ("C-e s", spawn "emacsclient -c -a '' --eval '(eshell)'")          -- eshell within emacs
-        , ("C-e t", spawn "emacsclient -c -a '' --eval '(mastodon)'")        -- mastodon within emacs
-        , ("C-e v", spawn "emacsclient -c -a '' --eval '(+vterm/here nil)'") -- vterm within emacs
-        -- emms is an emacs audio player. I set it to auto start playing in a specific directory.
-        , ("C-e a", spawn "emacsclient -c -a '' --eval '(emms)' --eval '(emms-play-directory-tree \"~/Music/Non-Classical/70s-80s/\")'")
 
     --- My Applications (Super+Alt+Key)
         , ("M-S-w", spawn myBrowser)
+	, ("M-C-<Space>", spawn "dmenu_run")
 
         -- , ("<XF86AudioMute>",   spawn "amixer set Master toggle")  -- Bug prevents it from toggling correctly in 12.04.
         , ("122", spawn "amixer set Master 5%- unmute")
@@ -448,7 +435,9 @@ myKeys =
 main :: IO ()
 main = do
     -- Launching three instances of xmobar on their monitors.
-    xmproc0 <- spawnPipe "xmobar /home/sam/.config/xmobar/xmobarrc0"
+    xmproc0 <- spawnPipe "xmobar  -x 0 /home/sam/.config/xmobar/xmobarrc2"
+    xmproc1 <- spawnPipe "xmobar  -x 1 /home/sam/.config/xmobar/xmobarrc0"
+    --xmproc1 <- spawnPipe "xmobar -x 1 /home/sam/.config/xmobar/xmobarrc1"
     -- the xmonad, ya know...what the WM is named after!
     xmonad $ ewmh def
         { manageHook = ( isFullscreen --> doFullFloat ) <+> myManageHook <+> manageDocks
@@ -460,6 +449,7 @@ main = do
                                <+> serverModeEventHook
                                <+> serverModeEventHookF "XMONAD_PRINT" (io . putStrLn)
                                <+> docksEventHook
+			       <+> fullscreenEventHook
         , modMask            = myModMask
         , terminal           = myTerminal
         , startupHook        = myStartupHook
@@ -469,7 +459,7 @@ main = do
         , normalBorderColor  = myNormColor
         , focusedBorderColor = myFocusColor
         , logHook = workspaceHistoryHook <+> myLogHook <+> dynamicLogWithPP xmobarPP
-                        { ppOutput = \x -> hPutStrLn xmproc0 x  
+                        { ppOutput = \x -> hPutStrLn xmproc0 x >> hPutStrLn xmproc1 x 
                         , ppCurrent = xmobarColor "#c3e88d" "" . wrap "[" "]" -- Current workspace in xmobar
                         , ppVisible = xmobarColor "#c3e88d" ""                -- Visible but not current workspace
                         , ppHidden = xmobarColor "#82AAFF" "" . wrap "*" ""   -- Hidden workspaces in xmobar

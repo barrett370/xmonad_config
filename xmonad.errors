@@ -1,0 +1,7 @@
+
+xmonad.hs:111:1: warning: [-Wtabs]
+    Tab character found here, and in five further locations.
+    Please use spaces instead.
+    |
+111 |           spawnOnce "xrandr --output DP-0 --mode 1920x1200 --right-of HDMI-0 &"
+    | ^^^^^^^^
