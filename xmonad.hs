@@ -107,7 +107,7 @@ windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace
 
 myStartupHook :: X ()
 myStartupHook = do
-          spawnOnce "picom &"
+          spawnOnce "picom --config /home/sam/.config/picom/picom.conf &"
 	  spawnOnce "xrandr --output DP-0 --mode 1920x1200 --right-of HDMI-0 &"
           spawnOnce "nitrogen --restore &"
 
@@ -324,7 +324,7 @@ xmobarEscape = concatMap doubleLts
 myWorkspaces :: [String]
 myWorkspaces = clickable . (map xmobarEscape)
                -- $ ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
-               $ ["dev", "www", "sys", "doc", "vbox", "chat", "email", "mus"]
+               $ ["dev", "www", "sys", "doc", "vbox", "chat", "mus"]
   where
         clickable l = [ "<action=xdotool key super+" ++ show (n) ++ "> " ++ ws ++ " </action>" |
                       (i,ws) <- zip [1..9] l,
@@ -336,15 +336,14 @@ myManageHook = composeAll
      -- I'm doing it this way because otherwise I would have to write out
      -- the full name of my workspaces.
      [
-       (className=? "firefox" <&&> title=? "Email - Samuel Barrett (MSci Comp Sci w Ind Year FT) - Outlook - Mozilla Firefox")     --> doShift ( myWorkspaces !! 6 )
-     , className=? "firefox"      --> doShift ( myWorkspaces !! 1 )
+       className=? "firefox"      --> doShift ( myWorkspaces !! 1 )
      , title =? "Microsoft Teams - Preview" --> doShift (myWorkspaces !! 5 )
      , title =? "Discord" --> doShift (myWorkspaces !! 5 )
-     -- , className =? "vlc"     --> doShift ( myWorkspaces !! 7 )
      , title =? "Oracle VM VirtualBox Manager"     --> doFloat
      , className =? "VirtualBox Manager" --> doShift  ( myWorkspaces !! 4 )
      , (className =? "firefox" <&&> resource =? "Dialog") --> doFloat  -- Float Firefox Dialog
      , (title=? "Microsoft Teams - Preview" <&&> resource =? "Dialog") --> doFloat  -- Float Firefox Dialog
+     , title=? "PulseEffects" --> doShift (myWorkspaces !! 6)
      ] <+> namedScratchpadManageHook myScratchPads
 
 myLogHook :: X ()
