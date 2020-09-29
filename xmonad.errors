@@ -3,5 +3,5 @@ xmonad.hs:111:1: warning: [-Wtabs]
     Tab character found here, and in five further locations.
     Please use spaces instead.
     |
-111 |           spawnOnce "xrandr --output  eDP1 --mode 3840x2160 --scale 0.6"
+111 |           spawnOnce "xrandr --output  eDP1 --mode 1920x1080 --scale 1 "
     | ^^^^^^^^

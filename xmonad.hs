@@ -108,7 +108,7 @@ windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace
 myStartupHook :: X ()
 myStartupHook = do
           spawnOnce "picom --config /home/sam/.config/picom/picom.conf &"
-	  spawnOnce "xrandr --output  eDP1 --mode 3840x2160 --scale 0.6"
+	  spawnOnce "xrandr --output  eDP1 --mode 1920x1080 --scale 1 "
           spawnOnce "nitrogen --restore &"
 
 myColorizer :: Window -> Bool -> X (String, String)
