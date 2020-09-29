@@ -108,7 +108,7 @@ windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace
 myStartupHook :: X ()
 myStartupHook = do
           spawnOnce "picom --config /home/sam/.config/picom/picom.conf &"
-	  spawnOnce "xrandr --output DP-0 --mode 1920x1200 --right-of HDMI-0 &"
+	  spawnOnce "xrandr --output  eDP1 --mode 3840x2160 --scale 0.6"
           spawnOnce "nitrogen --restore &"
 
 myColorizer :: Window -> Bool -> X (String, String)
@@ -434,9 +434,8 @@ myKeys =
 main :: IO ()
 main = do
     -- Launching three instances of xmobar on their monitors.
-    xmproc0 <- spawnPipe "xmobar  -x 0 /home/sam/.config/xmobar/xmobarrc2"
-    xmproc1 <- spawnPipe "xmobar  -x 1 /home/sam/.config/xmobar/xmobarrc0"
-    --xmproc1 <- spawnPipe "xmobar -x 1 /home/sam/.config/xmobar/xmobarrc1"
+    xmproc0 <- spawnPipe "xmobar /home/sam/.config/xmobar/xmobarrc2"
+    -- xmproc1 <- spawnPipe "xmobar -x 1 /home/sam/.config/xmobar/xmobarrc1"
     -- the xmonad, ya know...what the WM is named after!
     xmonad $ ewmh def
         { manageHook = ( isFullscreen --> doFullFloat ) <+> myManageHook <+> manageDocks
@@ -458,7 +457,7 @@ main = do
         , normalBorderColor  = myNormColor
         , focusedBorderColor = myFocusColor
         , logHook = workspaceHistoryHook <+> myLogHook <+> dynamicLogWithPP xmobarPP
-                        { ppOutput = \x -> hPutStrLn xmproc0 x >> hPutStrLn xmproc1 x 
+                        { ppOutput = \x -> hPutStrLn xmproc0 x 
                         , ppCurrent = xmobarColor "#c3e88d" "" . wrap "[" "]" -- Current workspace in xmobar
                         , ppVisible = xmobarColor "#c3e88d" ""                -- Visible but not current workspace
                         , ppHidden = xmobarColor "#82AAFF" "" . wrap "*" ""   -- Hidden workspaces in xmobar
