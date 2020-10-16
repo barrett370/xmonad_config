@@ -75,7 +75,7 @@ import XMonad.Util.Run (runProcessWithInput, safeSpawn, spawnPipe)
 import XMonad.Util.SpawnOnce
 
 myFont :: String
-myFont = "xft:Mononoki Nerd Font:bold:size=9:antialias=true:hinting=true"
+myFont = "xft:Fira Code Nerd Font:bold:size=9:antialias=true:hinting=true"
 
 myModMask :: KeyMask
 myModMask = mod4Mask       -- Sets modkey to super/windows key
@@ -110,6 +110,7 @@ myStartupHook :: X ()
 myStartupHook = do
           spawnOnce "picom --config /home/sam/.config/picom/picom.conf &"
 	  spawnOnce "xrandr --output DP-4 --mode 2560x1440 --output DP-0 --mode 1920x1200 --left-of DP-4"
+	  spawnOnce "/usr/lib/notification-daemon-1.0/notification-daemon &"
 	  spawnOnce "xsetroot -cursor_name left_ptr &"
           spawnOnce "nitrogen --restore &"
 
@@ -244,7 +245,7 @@ tabs     = renamed [Replace "tabs"]
            -- add spacing between window and tabs which looks bad.
            $ tabbed shrinkText myTabConfig
   where
-    myTabConfig = def { fontName            = "xft:Mononoki Nerd Font:regular:pixelsize=11"
+    myTabConfig = def { fontName            = "xft:Fira Code Nerd Font:regular:pixelsize=11"
                       , activeColor         = "#292d3e"
                       , inactiveColor       = "#3e445e"
                       , activeBorderColor   = "#292d3e"
