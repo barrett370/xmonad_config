@@ -179,20 +179,20 @@ calcPrompt c ans =
 
 myScratchPads :: [NamedScratchpad]
 myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm
-                , NS "mocp" spawnMocp findMocp manageMocp
+                , NS "spotify" spawnSpotify findSpotify manageSpotify
                 ]
   where
-    spawnTerm  = myTerminal ++ " -n scratchpad"
-    findTerm   = resource =? "scratchpad"
+    spawnTerm  = myTerminal ++ " --class scratchpad,Scratchpad"
+    findTerm   = className =? "Scratchpad"
     manageTerm = customFloating $ W.RationalRect l t w h
                where
                  h = 0.9
                  w = 0.9
                  t = 0.95 -h
                  l = 0.95 -w
-    spawnMocp  = myTerminal ++ " -n mocp 'mocp'"
-    findMocp   = resource =? "mocp"
-    manageMocp = customFloating $ W.RationalRect l t w h
+    spawnSpotify  = "alacritty -t spotify --class spotifyTui,SpotifyTui -e spt"
+    findSpotify = className =? "SpotifyTui"
+    manageSpotify = customFloating $ W.RationalRect l t w h
                where
                  h = 0.9
                  w = 0.9
@@ -303,16 +303,19 @@ myManageHook = composeAll
      -- the full name of my workspaces.
      [
        className=? "firefox"      --> doShift ( myWorkspaces !! 1 )
+     , className=? "Brave-browser"      --> doShift ( myWorkspaces !! 1 )
+     , (className=? "Brave-browser"  <&&>   (stringProperty "WM_WINDOW_ROLE")=? "pop-up")    -->  doFloat
      , className=?"Microsoft Teams - Preview"--> doShift (myWorkspaces !! 4)
      , title =? "Discord" --> doShift (myWorkspaces !! 4 )
      , title =? "Oracle VM VirtualBox Manager"     --> doFloat
      , className =? "VirtualBox Manager" --> doShift  ( myWorkspaces !! 7 )
      , (className =? "firefox" <&&> resource =? "Dialog") --> doFloat  -- Float Firefox Dialog
-     , (title=? "firefox" <&&> resource =? "Dialog") --> doFloat  -- Float Firefox Dialog
+     , (title=? "Brave-browser" <&&> resource =? "Dialog") --> doFloat  -- Float Firefox Dialog
      , title=? "PulseEffects" --> doShift (myWorkspaces !! 5)
      , title=? "spotify" --> doShift (myWorkspaces !! 5)
      , (title=? "Zoom - Licensed Account" <||> className =? "zoom")--> doShift (myWorkspaces !! 6)
-     ] <+> namedScratchpadManageHook myScratchPads
+     ] <+> namedScratchpadManageHook myScratchPads 
+
 
 myLogHook :: X ()
 myLogHook = fadeInactiveLogHook fadeAmount
@@ -382,7 +385,7 @@ myKeys =
 
     -- Scratchpads
         , ("M-C-<Return>", namedScratchpadAction myScratchPads "terminal")
-        , ("M-C-c", namedScratchpadAction myScratchPads "mocp")
+        , ("M-C-m", namedScratchpadAction myScratchPads "spotify")
 
 
     --- My Applications (Super+Alt+Key)
