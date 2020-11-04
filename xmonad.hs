@@ -109,9 +109,10 @@ windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace
 myStartupHook :: X ()
 myStartupHook = do
           spawnOnce "picom --config /home/sam/.config/picom/picom.conf &"
-          spawnOnce "xrandr --output  eDP1 --mode 1920x1080 --scale 1 "
           spawnOnce "/usr/lib/notification-daemon-1.0/notification-daemon &"
           spawnOnce "xsetroot -cursor_name left_ptr &"
+          spawnOnce "setxkbmap -option caps:escape &"
+          spawnOnce "xrandr --output  eDP1 --mode 1920x1080 --scale 1 &"
           spawnOnce "nitrogen --restore &"
 
 myColorizer :: Window -> Bool -> X (String, String)
@@ -394,8 +395,15 @@ myKeys =
 	, ("<Pause>", spawn "flameshot gui")
 
         -- , ("<XF86AudioMute>",   spawn "amixer set Master toggle")  -- Bug prevents it from toggling correctly in 12.04.
+<<<<<<< Updated upstream
         , ("<XF86AudioLowerVolume>", spawn "amixer sset Master 5%- unmute")
         , ("<XF86AudioRaiseVolume>", spawn "amixer sset Master 5%+ unmute")
+=======
+        , ("122", spawn "amixer set Master 5%- unmute")
+        , ("123", spawn "amixer set Master 5%+ unmute")
+	, ("<XF86MonBrightnessUp>", spawn "xbacklight -inc 5")
+	, ("<XF86MonBrightnessDown>", spawn "xbacklight -dec 5")
+>>>>>>> Stashed changes
         ]
         -- Appending search engine prompts to keybindings list.
         -- Look at "search engines" section of this config for values for "k".
