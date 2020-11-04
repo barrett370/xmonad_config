@@ -6,7 +6,7 @@ import qualified XMonad.StackSet as W
 
     -- Actions
 import XMonad.Actions.CopyWindow (kill1, killAllOtherCopies)
-import XMonad.Actions.CycleWS (moveTo, shiftTo, WSType(..), nextScreen, prevScreen)
+import XMonad.Actions.CycleWS (moveTo, shiftTo, WSType(..), nextScreen, prevScreen, nextWS, prevWS)
 import XMonad.Actions.GridSelect
 import XMonad.Actions.MouseResize
 import XMonad.Actions.Promote
@@ -22,6 +22,7 @@ import Data.Monoid
 import Data.Maybe (isJust)
 import Data.Tree
 import qualified Data.Map as M
+import qualified Data.Text as Text
 
     -- Hooks
 import XMonad.Hooks.DynamicLog (dynamicLogWithPP, wrap, xmobarPP, xmobarColor, shorten, PP(..))
@@ -74,7 +75,7 @@ import XMonad.Util.Run (runProcessWithInput, safeSpawn, spawnPipe)
 import XMonad.Util.SpawnOnce
 
 myFont :: String
-myFont = "xft:Mononoki Nerd Font:bold:size=9:antialias=true:hinting=true"
+myFont = "xft:Fira Code Nerd Font:bold:size=9:antialias=true:hinting=true"
 
 myModMask :: KeyMask
 myModMask = mod4Mask       -- Sets modkey to super/windows key
@@ -91,7 +92,7 @@ myEditor = "nvim"  -- Sets emacs as editor for tree select
 -- myEditor = myTerminal ++ " -e vim "    -- Sets vim as editor for tree select
 
 myBorderWidth :: Dimension
-myBorderWidth = 2          -- Sets border width for windows
+myBorderWidth = 1         -- Sets border width for windows
 
 myNormColor :: String
 myNormColor   = "#292d3e"  -- Border color of normal windows
@@ -108,7 +109,9 @@ windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace
 myStartupHook :: X ()
 myStartupHook = do
           spawnOnce "picom --config /home/sam/.config/picom/picom.conf &"
-	  spawnOnce "xrandr --output  eDP1 --mode 1920x1080 --scale 1 "
+          spawnOnce "xrandr --output  eDP1 --mode 1920x1080 --scale 1 "
+          spawnOnce "/usr/lib/notification-daemon-1.0/notification-daemon &"
+          spawnOnce "xsetroot -cursor_name left_ptr &"
           spawnOnce "nitrogen --restore &"
 
 myColorizer :: Window -> Bool -> X (String, String)
@@ -129,7 +132,6 @@ dtXPConfig = def
       , fgHLight            = "#000000"
       , borderColor         = "#535974"
       , promptBorderWidth   = 0
-      , promptKeymap        = dtXPKeymap
       , position            = Top
 --    , position            = CenteredAt { xpCenterY = 0.3, xpWidth = 0.3 }
       , height              = 20
@@ -174,62 +176,23 @@ calcPrompt c ans =
         trim  = f . f
             where f = reverse . dropWhile isSpace
 
-dtXPKeymap :: M.Map (KeyMask,KeySym) (XP ())
-dtXPKeymap = M.fromList $
-     map (first $ (,) controlMask)   -- control + <key>
-     [ (xK_z, killBefore)            -- kill line backwards
-     , (xK_k, killAfter)             -- kill line forwards
-     , (xK_a, startOfLine)           -- move to the beginning of the line
-     , (xK_e, endOfLine)             -- move to the end of the line
-     , (xK_m, deleteString Next)     -- delete a character foward
-     , (xK_b, moveCursor Prev)       -- move cursor forward
-     , (xK_f, moveCursor Next)       -- move cursor backward
-     , (xK_BackSpace, killWord Prev) -- kill the previous word
-     , (xK_y, pasteString)           -- paste a string
-     , (xK_g, quit)                  -- quit out of prompt
-     , (xK_bracketleft, quit)
-     ]
-     ++
-     map (first $ (,) altMask)       -- meta key + <key>
-     [ (xK_BackSpace, killWord Prev) -- kill the prev word
-     , (xK_f, moveWord Next)         -- move a word forward
-     , (xK_b, moveWord Prev)         -- move a word backward
-     , (xK_d, killWord Next)         -- kill the next word
-     , (xK_n, moveHistory W.focusUp')   -- move up thru history
-     , (xK_p, moveHistory W.focusDown') -- move down thru history
-     ]
-     ++
-     map (first $ (,) 0) -- <key>
-     [ (xK_Return, setSuccess True >> setDone True)
-     , (xK_KP_Enter, setSuccess True >> setDone True)
-     , (xK_BackSpace, deleteString Prev)
-     , (xK_Delete, deleteString Next)
-     , (xK_Left, moveCursor Prev)
-     , (xK_Right, moveCursor Next)
-     , (xK_Home, startOfLine)
-     , (xK_End, endOfLine)
-     , (xK_Down, moveHistory W.focusUp')
-     , (xK_Up, moveHistory W.focusDown')
-     , (xK_Escape, quit)
-     ]
-
 
 myScratchPads :: [NamedScratchpad]
 myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm
-                , NS "mocp" spawnMocp findMocp manageMocp
+                , NS "spotify" spawnSpotify findSpotify manageSpotify
                 ]
   where
-    spawnTerm  = myTerminal ++ " -n scratchpad"
-    findTerm   = resource =? "scratchpad"
+    spawnTerm  = myTerminal ++ " --class scratchpad,Scratchpad"
+    findTerm   = className =? "Scratchpad"
     manageTerm = customFloating $ W.RationalRect l t w h
                where
                  h = 0.9
                  w = 0.9
                  t = 0.95 -h
                  l = 0.95 -w
-    spawnMocp  = myTerminal ++ " -n mocp 'mocp'"
-    findMocp   = resource =? "mocp"
-    manageMocp = customFloating $ W.RationalRect l t w h
+    spawnSpotify  = "alacritty -t spotify --class spotifyTui,SpotifyTui -e spt"
+    findSpotify = className =? "SpotifyTui"
+    manageSpotify = customFloating $ W.RationalRect l t w h
                where
                  h = 0.9
                  w = 0.9
@@ -282,7 +245,7 @@ tabs     = renamed [Replace "tabs"]
            -- add spacing between window and tabs which looks bad.
            $ tabbed shrinkText myTabConfig
   where
-    myTabConfig = def { fontName            = "xft:Mononoki Nerd Font:regular:pixelsize=11"
+    myTabConfig = def { fontName            = "xft:Fira Code Nerd Font:regular:pixelsize=11"
                       , activeColor         = "#292d3e"
                       , inactiveColor       = "#3e445e"
                       , activeBorderColor   = "#292d3e"
@@ -309,7 +272,7 @@ myLayoutHook = avoidStruts $ mouseResize $ windowArrange $ T.toggleLayouts float
                                  ||| magnify
                                  ||| noBorders monocle
                                  ||| floats
-                                 -- ||| grid
+                                 ||| grid
                                  ||| noBorders tabs
                                  -- ||| spirals
                                  -- ||| threeCol
@@ -324,11 +287,14 @@ xmobarEscape = concatMap doubleLts
 myWorkspaces :: [String]
 myWorkspaces = clickable . (map xmobarEscape)
                -- $ ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
-               $ ["dev", "www", "sys", "doc", "vbox", "chat", "mus"]
+               $ ["1:dev", "2:www", "3:sys", "4:doc", "5:chat", "6:mus", "7:call","8:vbox"]
   where
         clickable l = [ "<action=xdotool key super+" ++ show (n) ++ "> " ++ ws ++ " </action>" |
                       (i,ws) <- zip [1..9] l,
                       let n = i ]
+
+isSubString :: String -> String -> Bool 
+isSubString s1 s2 = (Text.pack s1) `Text.isInfixOf` (Text.pack s2)
 
 myManageHook :: XMonad.Query (Data.Monoid.Endo WindowSet)
 myManageHook = composeAll
@@ -337,18 +303,23 @@ myManageHook = composeAll
      -- the full name of my workspaces.
      [
        className=? "firefox"      --> doShift ( myWorkspaces !! 1 )
-     , title =? "Microsoft Teams - Preview" --> doShift (myWorkspaces !! 5 )
-     , title =? "Discord" --> doShift (myWorkspaces !! 5 )
+     , className=? "Brave-browser"      --> doShift ( myWorkspaces !! 1 )
+     , (className=? "Brave-browser"  <&&>   (stringProperty "WM_WINDOW_ROLE")=? "pop-up")    -->  doFloat
+     , className=?"Microsoft Teams - Preview"--> doShift (myWorkspaces !! 4)
+     , title =? "Discord" --> doShift (myWorkspaces !! 4 )
      , title =? "Oracle VM VirtualBox Manager"     --> doFloat
-     , className =? "VirtualBox Manager" --> doShift  ( myWorkspaces !! 4 )
+     , className =? "VirtualBox Manager" --> doShift  ( myWorkspaces !! 7 )
      , (className =? "firefox" <&&> resource =? "Dialog") --> doFloat  -- Float Firefox Dialog
-     , (title=? "Microsoft Teams - Preview" <&&> resource =? "Dialog") --> doFloat  -- Float Firefox Dialog
-     , title=? "PulseEffects" --> doShift (myWorkspaces !! 6)
-     ] <+> namedScratchpadManageHook myScratchPads
+     , (title=? "Brave-browser" <&&> resource =? "Dialog") --> doFloat  -- Float Firefox Dialog
+     , title=? "PulseEffects" --> doShift (myWorkspaces !! 5)
+     , title=? "spotify" --> doShift (myWorkspaces !! 5)
+     , (title=? "Zoom - Licensed Account" <||> className =? "zoom")--> doShift (myWorkspaces !! 6)
+     ] <+> namedScratchpadManageHook myScratchPads 
+
 
 myLogHook :: X ()
 myLogHook = fadeInactiveLogHook fadeAmount
-    where fadeAmount = 1.0
+    where fadeAmount = 1
 
 myKeys :: [(String, X ())]
 myKeys =
@@ -366,7 +337,6 @@ myKeys =
     -- Windows
         , ("M-S-c", kill1)                           -- Kill the currently focused client
         , ("M-S-a", killAll)                         -- Kill all windows on current workspace
-
     -- Floating windows
         , ("M-f", sendMessage (T.Toggle "floats"))       -- Toggles my 'floats' layout
         , ("M-<Delete>", withFocused $ windows . W.sink) -- Push floating window back to tile
@@ -384,7 +354,12 @@ myKeys =
         , ("M1-C-<Tab>", rotAllDown)         -- Rotate all the windows in the current stack
         --, ("M-S-s", windows copyToAll)
         , ("M-C-s", killAllOtherCopies)
-
+	, ("M-S-l", nextWS)
+	, ("M-S-h", prevWS)
+	-- KB layouts
+	, ("M-C-S-d", spawn "setxkbmap dvorak")
+	, ("M-C-S-n", spawn "setxkbmap gb")
+	
         -- Layouts
         , ("M-<Tab>", sendMessage NextLayout)                -- Switch to next layout
         , ("M-C-M1-<Up>", sendMessage Arrange)
@@ -410,16 +385,17 @@ myKeys =
 
     -- Scratchpads
         , ("M-C-<Return>", namedScratchpadAction myScratchPads "terminal")
-        , ("M-C-c", namedScratchpadAction myScratchPads "mocp")
+        , ("M-C-m", namedScratchpadAction myScratchPads "spotify")
 
 
     --- My Applications (Super+Alt+Key)
         , ("M-S-w", spawn myBrowser)
-	, ("M-C-<Space>", spawn "dmenu_run")
+	, ("M-C-<Space>", spawn "dmenu_run -m 1")
+	, ("<Pause>", spawn "flameshot gui")
 
         -- , ("<XF86AudioMute>",   spawn "amixer set Master toggle")  -- Bug prevents it from toggling correctly in 12.04.
-        , ("122", spawn "amixer set Master 5%- unmute")
-        , ("123", spawn "amixer set Master 5%+ unmute")
+        , ("<XF86AudioLowerVolume>", spawn "amixer sset Master 5%- unmute")
+        , ("<XF86AudioRaiseVolume>", spawn "amixer sset Master 5%+ unmute")
         ]
         -- Appending search engine prompts to keybindings list.
         -- Look at "search engines" section of this config for values for "k".
