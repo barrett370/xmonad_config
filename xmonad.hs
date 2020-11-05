@@ -395,15 +395,10 @@ myKeys =
 	, ("<Pause>", spawn "flameshot gui")
 
         -- , ("<XF86AudioMute>",   spawn "amixer set Master toggle")  -- Bug prevents it from toggling correctly in 12.04.
-<<<<<<< Updated upstream
-        , ("<XF86AudioLowerVolume>", spawn "amixer sset Master 5%- unmute")
-        , ("<XF86AudioRaiseVolume>", spawn "amixer sset Master 5%+ unmute")
-=======
         , ("122", spawn "amixer set Master 5%- unmute")
         , ("123", spawn "amixer set Master 5%+ unmute")
 	, ("<XF86MonBrightnessUp>", spawn "xbacklight -inc 5")
 	, ("<XF86MonBrightnessDown>", spawn "xbacklight -dec 5")
->>>>>>> Stashed changes
         ]
         -- Appending search engine prompts to keybindings list.
         -- Look at "search engines" section of this config for values for "k".
