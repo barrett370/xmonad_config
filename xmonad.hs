@@ -84,11 +84,11 @@ myTerminal :: String
 myTerminal = "alacritty"   -- Sets default terminal
 
 myBrowser :: String
-myBrowser = "firefox"               -- Sets qutebrowser as browser for tree select
+myBrowser = "brave"               -- Sets qutebrowser as browser for tree select
 -- myBrowser = myTerminal ++ " -e lynx " -- Sets lynx as browser for tree select
 
 myEditor :: String
-myEditor = "nvim"  -- Sets emacs as editor for tree select
+myEditor = myTerminal ++ "-e nvim"  -- Sets emacs as editor for tree select
 -- myEditor = myTerminal ++ " -e vim "    -- Sets vim as editor for tree select
 
 myBorderWidth :: Dimension
@@ -109,10 +109,10 @@ windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace
 myStartupHook :: X ()
 myStartupHook = do
           spawnOnce "picom --config /home/sam/.config/picom/picom.conf &"
-          spawnOnce "/usr/lib/notification-daemon-1.0/notification-daemon &"
+          spawnOnce "/usr/bin/dunst &"
           spawnOnce "xsetroot -cursor_name left_ptr &"
           spawnOnce "setxkbmap -option caps:escape &"
-          spawnOnce "xrandr --output  eDP1 --mode 1920x1080 --scale 1 &"
+          spawnOnce "xrandr --output  eDP1 --mode 3840x2160 --scale 0.5 &"
           spawnOnce "nitrogen --restore &"
 
 myColorizer :: Window -> Bool -> X (String, String)
