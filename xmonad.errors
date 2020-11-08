@@ -1,8 +1,0 @@
-Loaded package environment from /home/sam/.ghc/x86_64-linux-8.8.4/environments/default
-
-xmonad.hs:112:1: warning: [-Wtabs]
-    Tab character found here, and in 14 further locations.
-    Please use spaces instead.
-    |
-112 |           spawnOnce "xrandr --output DP-4 --mode 2560x1440 --output DP-0 --mode 1920x1200 --left-of DP-4"
-    | ^^^^^^^^

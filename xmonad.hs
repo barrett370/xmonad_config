@@ -84,15 +84,15 @@ myTerminal :: String
 myTerminal = "alacritty"   -- Sets default terminal
 
 myBrowser :: String
-myBrowser = "firefox"               -- Sets qutebrowser as browser for tree select
+myBrowser = "brave"               -- Sets qutebrowser as browser for tree select
 -- myBrowser = myTerminal ++ " -e lynx " -- Sets lynx as browser for tree select
 
 myEditor :: String
-myEditor = "nvim"  -- Sets emacs as editor for tree select
--- myEditor = myTerminal ++ " -e vim "    -- Sets vim as editor for tree select
+myEditor = myTerminal ++ "-e nvim"  -- Sets emacs as editor for tree select
+-- myEditor = myTerminal ++ " -e nvim "    -- Sets vim as editor for tree select
 
 myBorderWidth :: Dimension
-myBorderWidth = 1         -- Sets border width for windows
+myBorderWidth =  3        -- Sets border width for windows
 
 myNormColor :: String
 myNormColor   = "#292d3e"  -- Border color of normal windows
@@ -109,9 +109,9 @@ windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace
 myStartupHook :: X ()
 myStartupHook = do
           spawnOnce "picom --config /home/sam/.config/picom/picom.conf &"
-	  spawnOnce "xrandr --output DP-4 --mode 2560x1440 --output DP-0 --mode 1920x1200 --left-of DP-4"
-	  spawnOnce "/usr/lib/notification-daemon-1.0/notification-daemon &"
-	  spawnOnce "xsetroot -cursor_name left_ptr &"
+          spawnOnce "xrandr --output DP-4 --mode 2560x1440 --output DP-0 --mode 1920x1200 --left-of DP-4"
+          spawnOnce "/usr/bin/dunst &"
+          spawnOnce "xsetroot -cursor_name left_ptr &"
           spawnOnce "nitrogen --restore &"
 
 myColorizer :: Window -> Bool -> X (String, String)
@@ -122,64 +122,11 @@ myColorizer = colorRangeFromClassName
                   (0xc0,0xa7,0x9a) -- inactive fg
                   (0x29,0x2d,0x3e) -- active fg
 
-
-dtXPConfig :: XPConfig
-dtXPConfig = def
-      { font                = myFont
-      , bgColor             = "#292d3e"
-      , fgColor             = "#d0d0d0"
-      , bgHLight            = "#c792ea"
-      , fgHLight            = "#000000"
-      , borderColor         = "#535974"
-      , promptBorderWidth   = 0
-      , position            = Top
---    , position            = CenteredAt { xpCenterY = 0.3, xpWidth = 0.3 }
-      , height              = 20
-      , historySize         = 256
-      , historyFilter       = id
-      , defaultText         = []
-      , autoComplete        = Just 100000  -- set Just 100000 for .1 sec
-      , showCompletionOnTab = False
-      -- , searchPredicate     = isPrefixOf
-      , searchPredicate     = fuzzyMatch
-      , alwaysHighlight     = True
-      , maxComplRows        = Nothing      -- set to Just 5 for 5 rows
-      }
-
--- The same config above minus the autocomplete feature which is annoying
--- on certain Xprompts, like the search engine prompts.
-dtXPConfig' :: XPConfig
-dtXPConfig' = dtXPConfig
-      { autoComplete        = Nothing
-      }
-
--- A list of all of the standard Xmonad prompts and a key press assigned to them.
--- These are used in conjunction with keybinding I set later in the config.
-promptList :: [(String, XPConfig -> X ())]
-promptList = [ ("m", manPrompt)          -- manpages prompt
-             , ("p", passPrompt)         -- get passwords (requires 'pass')
-             , ("g", passGeneratePrompt) -- generate passwords (requires 'pass')
-             , ("r", passRemovePrompt)   -- remove passwords (requires 'pass')
-             , ("s", sshPrompt)          -- ssh prompt
-             , ("x", xmonadPrompt)       -- xmonad prompt
-             ]
-
--- Same as the above list except this is for my custom prompts.
-promptList' :: [(String, XPConfig -> String -> X (), String)]
-promptList' = [ ("c", calcPrompt, "qalc")         -- requires qalculate-gtk
-              ]
-
-calcPrompt c ans =
-    inputPrompt c (trim ans) ?+ \input ->
-        liftIO(runProcessWithInput "qalc" [input] "") >>= calcPrompt c
-    where
-        trim  = f . f
-            where f = reverse . dropWhile isSpace
-
-
 myScratchPads :: [NamedScratchpad]
 myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm
                 , NS "spotify" spawnSpotify findSpotify manageSpotify
+                , NS "htop"    spawnHtop findHtop manageHtop
+                , NS "zotero"    spawnZotero findZotero manageZotero
                 ]
   where
     spawnTerm  = myTerminal ++ " --class scratchpad,Scratchpad"
@@ -198,7 +145,22 @@ myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm
                  w = 0.9
                  t = 0.95 -h
                  l = 0.95 -w
-
+    spawnHtop = myTerminal ++ " --class htop,Htop -e htop"
+    findHtop = className =? "Htop"
+    manageHtop = customFloating $ W.RationalRect l t w h
+               where
+                 h = 0.5
+                 w = 0.9
+                 t = 0.95 -h
+                 l = 0.95 -w
+    spawnZotero  = "zotero"
+    findZotero = className =? "Zotero"
+    manageZotero = customFloating $ W.RationalRect l t w h
+               where
+                 h = 0.9
+                 w = 0.9
+                 t = 0.95 -h
+                 l = 0.95 -w
 mySpacing :: Integer -> l a -> XMonad.Layout.LayoutModifier.ModifiedLayout Spacing l a
 mySpacing i = spacingRaw False (Border i i i i) True (Border i i i i) True
 
@@ -253,23 +215,13 @@ tabs     = renamed [Replace "tabs"]
                       , activeTextColor     = "#ffffff"
                       , inactiveTextColor   = "#d0d0d0"
                       }
-
--- Theme for showWName which prints current workspace when you change workspaces.
-myShowWNameTheme :: SWNConfig
-myShowWNameTheme = def
-    { swn_font              = "xft:Sans:bold:size=60"
-    , swn_fade              = 1.0
-    , swn_bgcolor           = "#000000"
-    , swn_color             = "#FFFFFF"
-    }
-
 -- The layout hook
-myLayoutHook = avoidStruts $ mouseResize $ windowArrange $ T.toggleLayouts floats $
+myLayoutHook = avoidStruts $ mouseResize $ windowArrange $ T.toggleLayouts floats $ 
                mkToggle (NBFULL ?? NOBORDERS ?? EOT) myDefaultLayout
              where
                -- I've commented out the layouts I don't use.
                myDefaultLayout =     tall
-                                 ||| magnify
+                                 ||| noBorders magnify
                                  ||| noBorders monocle
                                  ||| floats
                                  ||| grid
@@ -292,9 +244,6 @@ myWorkspaces = clickable . (map xmobarEscape)
         clickable l = [ "<action=xdotool key super+" ++ show (n) ++ "> " ++ ws ++ " </action>" |
                       (i,ws) <- zip [1..9] l,
                       let n = i ]
-
-isSubString :: String -> String -> Bool 
-isSubString s1 s2 = (Text.pack s1) `Text.isInfixOf` (Text.pack s2)
 
 myManageHook :: XMonad.Query (Data.Monoid.Endo WindowSet)
 myManageHook = composeAll
@@ -327,18 +276,18 @@ myKeys =
         [ ("M-C-r", spawn "xmonad --recompile")      -- Recompiles xmonad
         , ("M-S-r", spawn "xmonad --restart")        -- Restarts xmonad
         , ("M-S-q", io exitSuccess)                  -- Quits xmonad
+        , ("M-C-l", spawn "slock")
+
 
     -- Open my preferred terminal
         , ("M-<Return>", spawn myTerminal)
-
-    -- Run Prompt
-        , ("M-S-<Return>", shellPrompt dtXPConfig)   -- Shell Prompt
 
     -- Windows
         , ("M-S-c", kill1)                           -- Kill the currently focused client
         , ("M-S-a", killAll)                         -- Kill all windows on current workspace
     -- Floating windows
         , ("M-f", sendMessage (T.Toggle "floats"))       -- Toggles my 'floats' layout
+        , ("M-n", sendMessage (T.Toggle "tall"))       -- Toggles my 'floats' layout
         , ("M-<Delete>", withFocused $ windows . W.sink) -- Push floating window back to tile
         , ("M-S-<Delete>", sinkAll)                      -- Push ALL floating windows to tile
 
@@ -354,12 +303,11 @@ myKeys =
         , ("M1-C-<Tab>", rotAllDown)         -- Rotate all the windows in the current stack
         --, ("M-S-s", windows copyToAll)
         , ("M-C-s", killAllOtherCopies)
-	, ("M-S-l", nextWS)
-	, ("M-S-h", prevWS)
-	-- KB layouts
-	, ("M-C-S-d", spawn "setxkbmap dvorak")
-	, ("M-C-S-n", spawn "setxkbmap gb")
-	
+        , ("M-S-l", nextWS)
+        , ("M-S-h", prevWS)
+        -- KB layouts
+        , ("M-C-S-d", spawn "setxkbmap dvorak")
+        , ("M-C-S-n", spawn "setxkbmap gb")
         -- Layouts
         , ("M-<Tab>", sendMessage NextLayout)                -- Switch to next layout
         , ("M-C-M1-<Up>", sendMessage Arrange)
@@ -368,7 +316,7 @@ myKeys =
         , ("M-S-<Space>", sendMessage ToggleStruts)         -- Toggles struts
         , ("M-S-n", sendMessage $ MT.Toggle NOBORDERS)      -- Toggles noborder
         , ("M-<KP_Plus>", sendMessage (IncMasterN 1))   -- Increase number of clients in master pane
-	, ("M-<KP_Divide>", sendMessage (IncMasterN (-1)))  -- Decrease number of clients in master pane
+        , ("M-<KP_Divide>", sendMessage (IncMasterN (-1)))  -- Decrease number of clients in master pane
         , ("M-S-<KP_Multiply>", increaseLimit)              -- Increase number of windows
         , ("M-S-<KP_Divide>", decreaseLimit)                -- Decrease number of windows
 
@@ -386,23 +334,21 @@ myKeys =
     -- Scratchpads
         , ("M-C-<Return>", namedScratchpadAction myScratchPads "terminal")
         , ("M-C-m", namedScratchpadAction myScratchPads "spotify")
+        , ("M-C-e", namedScratchpadAction myScratchPads "htop")
+        , ("M-C-z", namedScratchpadAction myScratchPads "zotero")
 
 
     --- My Applications (Super+Alt+Key)
         , ("M-S-w", spawn myBrowser)
-	, ("M-C-<Space>", spawn "dmenu_run -m 1")
-	, ("<Pause>", spawn "flameshot gui")
-
+        , ("M-C-<Space>", spawn "dmenu_run -m 1")
+        , ("<Pause>", spawn "flameshot gui")
         -- , ("<XF86AudioMute>",   spawn "amixer set Master toggle")  -- Bug prevents it from toggling correctly in 12.04.
         , ("<XF86AudioLowerVolume>", spawn "amixer sset Master 5%- unmute")
         , ("<XF86AudioRaiseVolume>", spawn "amixer sset Master 5%+ unmute")
+        , ("<XF86AudioNext>", spawn "spt-check next-song")
+        , ("<XF86AudioPrev>", spawn "spt-check prev-song")
+        , ("<XF86AudioStop>", spawn "spt-check play-pause")
         ]
-        -- Appending search engine prompts to keybindings list.
-        -- Look at "search engines" section of this config for values for "k".
-        -- Appending some extra xprompts to keybindings list.
-        -- Look at "xprompt settings" section this of config for values for "k".
-        ++ [("M-p " ++ k, f dtXPConfig') | (k,f) <- promptList ]
-        ++ [("M-p " ++ k, f dtXPConfig' g) | (k,f,g) <- promptList' ]
         -- The following lines are needed for named scratchpads.
           where nonNSP          = WSIs (return (\ws -> W.tag ws /= "nsp"))
                 nonEmptyNonNSP  = WSIs (return (\ws -> isJust (W.stack ws) && W.tag ws /= "nsp"))
@@ -423,7 +369,7 @@ main = do
                                <+> serverModeEventHook
                                <+> serverModeEventHookF "XMONAD_PRINT" (io . putStrLn)
                                <+> docksEventHook
-			       <+> fullscreenEventHook
+                               <+> fullscreenEventHook
         , modMask            = myModMask
         , terminal           = myTerminal
         , startupHook        = myStartupHook
