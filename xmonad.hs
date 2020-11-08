@@ -81,7 +81,7 @@ myModMask :: KeyMask
 myModMask = mod4Mask       -- Sets modkey to super/windows key
 
 myTerminal :: String
-myTerminal = "alacritty"   -- Sets default terminal
+myTerminal = "st"   -- Sets default terminal
 
 myBrowser :: String
 myBrowser = "brave"               -- Sets qutebrowser as browser for tree select
@@ -129,7 +129,7 @@ myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm
                 , NS "zotero"    spawnZotero findZotero manageZotero
                 ]
   where
-    spawnTerm  = myTerminal ++ " --class scratchpad,Scratchpad"
+    spawnTerm  = myTerminal ++ " -c Scratchpad"
     findTerm   = className =? "Scratchpad"
     manageTerm = customFloating $ W.RationalRect l t w h
                where
@@ -137,7 +137,7 @@ myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm
                  w = 0.9
                  t = 0.95 -h
                  l = 0.95 -w
-    spawnSpotify  = "alacritty -t spotify --class spotifyTui,SpotifyTui -e spt"
+    spawnSpotify  = "st -c SpotifyTui -T foo -e spt"
     findSpotify = className =? "SpotifyTui"
     manageSpotify = customFloating $ W.RationalRect l t w h
                where
@@ -145,7 +145,7 @@ myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm
                  w = 0.9
                  t = 0.95 -h
                  l = 0.95 -w
-    spawnHtop = myTerminal ++ " --class htop,Htop -e htop"
+    spawnHtop = myTerminal ++ " --class Htop -e htop"
     findHtop = className =? "Htop"
     manageHtop = customFloating $ W.RationalRect l t w h
                where
