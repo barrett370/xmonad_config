@@ -112,7 +112,7 @@ myStartupHook = do
           spawnOnce "/usr/bin/dunst &"
           spawnOnce "xsetroot -cursor_name left_ptr &"
           spawnOnce "setxkbmap -option caps:escape &"
-          spawnOnce "xrandr --output  eDP1 --mode 3840x2160 --scale 0.5 &"
+          spawnOnce "xrandr --output  eDP1 --mode 3840x2160 &"
           spawnOnce "nitrogen --restore &"
 
 myColorizer :: Window -> Bool -> X (String, String)
@@ -395,8 +395,8 @@ myKeys =
 	, ("<Pause>", spawn "flameshot gui")
 
         -- , ("<XF86AudioMute>",   spawn "amixer set Master toggle")  -- Bug prevents it from toggling correctly in 12.04.
-        , ("122", spawn "amixer set Master 5%- unmute")
-        , ("123", spawn "amixer set Master 5%+ unmute")
+        , ("<XF86AudioLowerVolume>", spawn "amixer set Master 5%- unmute")
+        , ("<XF86AudioRaiseVolume>", spawn "amixer set Master 5%+ unmute")
 	, ("<XF86MonBrightnessUp>", spawn "xbacklight -inc 5")
 	, ("<XF86MonBrightnessDown>", spawn "xbacklight -dec 5")
         ]
