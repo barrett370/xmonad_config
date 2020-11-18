@@ -1,5 +1,43 @@
   -- Base
 import XMonad
+    ( mod1Mask,
+      mod4Mask,
+      gets,
+      io,
+      spawn,
+      (|||),
+      xmonad,
+      (-->),
+      (<&&>),
+      (<+>),
+      (<||>),
+      (=?),
+      className,
+      composeAll,
+      doFloat,
+      doShift,
+      resource,
+      stringProperty,
+      title,
+      sendMessage,
+      windows,
+      withFocused,
+      KeyMask,
+      Window,
+      Dimension,
+      Default(def),
+      Query,
+      WindowSet,
+      X,
+      XConfig(manageHook, handleEventHook, modMask, terminal,
+              startupHook, layoutHook, workspaces, borderWidth,
+              normalBorderColor, focusedBorderColor, logHook),
+      XState(windowset),
+      ChangeLayout(NextLayout),
+      Full(Full),
+      IncMasterN(IncMasterN),
+      Mirror(Mirror),
+      Resize(Expand, Shrink) )
 import System.IO (hPutStrLn)
 import System.Exit (exitSuccess)
 import qualified XMonad.StackSet as W
@@ -7,9 +45,9 @@ import qualified XMonad.StackSet as W
     -- Actions
 import XMonad.Actions.CopyWindow (kill1, killAllOtherCopies)
 import XMonad.Actions.CycleWS (moveTo, shiftTo, WSType(..), nextScreen, prevScreen, nextWS, prevWS)
-import XMonad.Actions.GridSelect
-import XMonad.Actions.MouseResize
-import XMonad.Actions.Promote
+import XMonad.Actions.GridSelect ( def, colorRangeFromClassName )
+import XMonad.Actions.MouseResize ( mouseResize )
+import XMonad.Actions.Promote ( promote )
 import XMonad.Actions.RotSlaves (rotSlavesDown, rotAllDown)
 import qualified XMonad.Actions.TreeSelect as TS
 import XMonad.Actions.WindowGo (runOrRaise)
@@ -18,61 +56,78 @@ import qualified XMonad.Actions.Search as S
 
     -- Data
 import Data.Char (isSpace)
-import Data.Monoid
+import Data.Monoid ( Endo )
 import Data.Maybe (isJust)
-import Data.Tree
+import Data.Tree ()
 import qualified Data.Map as M
 import qualified Data.Text as Text
 
     -- Hooks
 import XMonad.Hooks.DynamicLog (dynamicLogWithPP, wrap, xmobarPP, xmobarColor, shorten, PP(..))
-import XMonad.Hooks.DynamicBars
-import XMonad.Hooks.EwmhDesktops  -- for some fullscreen events, also for xcomposite in obs.
-import XMonad.Hooks.FadeInactive
+import XMonad.Hooks.DynamicBars ()
+import XMonad.Hooks.EwmhDesktops ( ewmh, fullscreenEventHook )  -- for some fullscreen events, also for xcomposite in obs.
+import XMonad.Hooks.FadeInactive ( fadeInactiveLogHook )
 import XMonad.Hooks.ManageDocks (avoidStruts, docksEventHook, manageDocks, ToggleStruts(..))
 import XMonad.Hooks.ManageHelpers (isFullscreen, doFullFloat)
 import XMonad.Hooks.ServerMode
-import XMonad.Hooks.SetWMName
-import XMonad.Hooks.WorkspaceHistory
+    ( serverModeEventHook,
+      serverModeEventHookCmd,
+      serverModeEventHookF )
+import XMonad.Hooks.SetWMName ()
+import XMonad.Hooks.WorkspaceHistory ( workspaceHistoryHook )
 
     -- Layouts
 import XMonad.Layout.GridVariants (Grid(Grid))
-import XMonad.Layout.SimplestFloat
+import XMonad.Layout.SimplestFloat (SimplestFloat,  simplestFloat )
 import XMonad.Layout.Spiral
 import XMonad.Layout.ResizableTile
+    ( MirrorResize(MirrorExpand, MirrorShrink),
+      ResizableTall(ResizableTall) )
 import XMonad.Layout.Tabbed
-import XMonad.Layout.ThreeColumns
+    (TabbedDecoration,  def,
+      shrinkText,
+      tabbed,
+      Theme(fontName, activeColor, inactiveColor, activeBorderColor,
+            inactiveBorderColor, activeTextColor, inactiveTextColor) )
+import XMonad.Layout.ThreeColumns ( ThreeCol(ThreeCol) )
 
     -- Layouts modifiers
-import XMonad.Layout.LayoutModifier
-import XMonad.Layout.LimitWindows (limitWindows, increaseLimit, decreaseLimit)
-import XMonad.Layout.Magnifier
-import XMonad.Layout.MultiToggle (mkToggle, single, EOT(EOT), (??))
+import XMonad.Layout.LayoutModifier ( ModifiedLayout )
+import XMonad.Layout.LimitWindows (LimitWindows, limitWindows, increaseLimit, decreaseLimit)
+import XMonad.Layout.Magnifier (Magnifier,  magnifier )
+import XMonad.Layout.MultiToggle (HCons, MultiToggle, mkToggle, single, EOT(EOT), (??))
 import XMonad.Layout.MultiToggle.Instances (StdTransformers(NBFULL, MIRROR, NOBORDERS))
-import XMonad.Layout.NoBorders
+import XMonad.Layout.NoBorders ( noBorders )
 import XMonad.Layout.Renamed (renamed, Rename(Replace))
-import XMonad.Layout.ShowWName
+import XMonad.Layout.ShowWName ( def )
 import XMonad.Layout.Spacing
-import XMonad.Layout.WindowArranger (windowArrange, WindowArrangerMsg(..))
+    ( spacingRaw, Border(Border), Spacing )
+import XMonad.Layout.WindowArranger (WindowArranger, windowArrange, WindowArrangerMsg(..))
 import qualified XMonad.Layout.ToggleLayouts as T (toggleLayouts, ToggleLayout(Toggle))
 import qualified XMonad.Layout.MultiToggle as MT (Toggle(..))
 
     -- Prompt
-import XMonad.Prompt
-import XMonad.Prompt.Input
-import XMonad.Prompt.FuzzyMatch
-import XMonad.Prompt.Man
-import XMonad.Prompt.Pass
+import XMonad.Prompt ( def, Direction1D(Prev, Next) )
+import XMonad.Prompt.Input ()
+import XMonad.Prompt.FuzzyMatch ()
+import XMonad.Prompt.Man ()
+import XMonad.Prompt.Pass ()
 import XMonad.Prompt.Shell (shellPrompt)
-import XMonad.Prompt.Ssh
-import XMonad.Prompt.XMonad
+import XMonad.Prompt.Ssh ()
+import XMonad.Prompt.XMonad ()
 import Control.Arrow (first)
 
     -- Utilities
 import XMonad.Util.EZConfig (additionalKeysP)
 import XMonad.Util.NamedScratchpad
+    ( customFloating,
+      namedScratchpadAction,
+      namedScratchpadManageHook,
+      NamedScratchpad(NS) )
 import XMonad.Util.Run (runProcessWithInput, safeSpawn, spawnPipe)
-import XMonad.Util.SpawnOnce
+import XMonad.Util.SpawnOnce ( spawnOnce )
+import XMonad.Layout.Decoration (DefaultShrinker, Decoration)
+import XMonad.Layout.Simplest (Simplest)
 
 myFont :: String
 myFont = "xft:Fira Code Nerd Font:bold:size=9:antialias=true:hinting=true"
@@ -170,31 +225,39 @@ mySpacing' :: Integer -> l a -> XMonad.Layout.LayoutModifier.ModifiedLayout Spac
 mySpacing' i = spacingRaw True (Border i i i i) True (Border i i i i) True
 
 -- Defining a bunch of layouts, many that I don't use.
+tall :: ModifiedLayout Rename (ModifiedLayout LimitWindows (ModifiedLayout Spacing ResizableTall)) a
 tall     = renamed [Replace "tall"]
            $ limitWindows 12
            $ mySpacing 8
            $ ResizableTall 1 (3/100) (1/2) []
+magnify :: ModifiedLayout Rename (ModifiedLayout Magnifier (ModifiedLayout LimitWindows (ModifiedLayout Spacing ResizableTall))) a
 magnify  = renamed [Replace "magnify"]
            $ magnifier
            $ limitWindows 12
            $ mySpacing 8
            $ ResizableTall 1 (3/100) (1/2) []
+monocle :: ModifiedLayout Rename (ModifiedLayout LimitWindows Full) a
 monocle  = renamed [Replace "monocle"]
            $ limitWindows 20 Full
+floats :: ModifiedLayout Rename (ModifiedLayout LimitWindows (ModifiedLayout WindowArranger SimplestFloat)) Window
 floats   = renamed [Replace "floats"]
            $ limitWindows 20 simplestFloat
+grid :: ModifiedLayout Rename (ModifiedLayout LimitWindows (ModifiedLayout Spacing (MultiToggle (HCons StdTransformers EOT) Grid))) a
 grid     = renamed [Replace "grid"]
            $ limitWindows 12
            $ mySpacing 8
            $ mkToggle (single MIRROR)
            $ Grid (16/10)
+spirals :: ModifiedLayout Rename (ModifiedLayout Spacing SpiralWithDir) a
 spirals  = renamed [Replace "spirals"]
            $ mySpacing' 8
            $ spiral (6/7)
+threeCol :: ModifiedLayout Rename (ModifiedLayout LimitWindows (ModifiedLayout Spacing ThreeCol)) a
 threeCol = renamed [Replace "threeCol"]
            $ limitWindows 7
            $ mySpacing' 4
            $ ThreeCol 1 (3/100) (1/2)
+threeRow :: ModifiedLayout Rename (ModifiedLayout LimitWindows (ModifiedLayout Spacing (Mirror ThreeCol))) a
 threeRow = renamed [Replace "threeRow"]
            $ limitWindows 7
            $ mySpacing' 4
@@ -202,6 +265,7 @@ threeRow = renamed [Replace "threeRow"]
            -- So we are applying Mirror to the ThreeCol layout.
            $ Mirror
            $ ThreeCol 1 (3/100) (1/2)
+tabs :: ModifiedLayout Rename (ModifiedLayout (Decoration TabbedDecoration DefaultShrinker) Simplest) Window
 tabs     = renamed [Replace "tabs"]
            -- I cannot add spacing to this layout because it will
            -- add spacing between window and tabs which looks bad.
