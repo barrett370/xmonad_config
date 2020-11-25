@@ -15,6 +15,7 @@ import XMonad
       className,
       composeAll,
       doFloat,
+      Event,
       doShift,
       resource,
       stringProperty,
@@ -56,7 +57,7 @@ import qualified XMonad.Actions.Search as S
 
     -- Data
 import Data.Char (isSpace)
-import Data.Monoid ( Endo )
+import Data.Monoid ( Endo,All )
 import Data.Maybe (isJust)
 import Data.Tree ()
 import qualified Data.Map as M
@@ -64,6 +65,7 @@ import qualified Data.Text as Text
 
     -- Hooks
 import XMonad.Hooks.DynamicLog (dynamicLogWithPP, wrap, xmobarPP, xmobarColor, shorten, PP(..))
+import XMonad.Hooks.DynamicProperty
 import XMonad.Hooks.DynamicBars ()
 import XMonad.Hooks.EwmhDesktops ( ewmh, fullscreenEventHook )  -- for some fullscreen events, also for xcomposite in obs.
 import XMonad.Hooks.FadeInactive ( fadeInactiveLogHook )
@@ -192,8 +194,10 @@ myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm
                  w = 0.9
                  t = 0.95 -h
                  l = 0.95 -w
-    spawnSpotify  = "st -c SpotifyTui -T foo -e spt"
-    findSpotify = className =? "SpotifyTui"
+    -- spawnSpotify  = "st -c SpotifyTui -T foo -e spt"
+    spawnSpotify = "spotify"
+    -- findSpotify = className =? "SpotifyTui"
+    findSpotify = className =? "Spotify"
     manageSpotify = customFloating $ W.RationalRect l t w h
                where
                  h = 0.9
@@ -309,6 +313,7 @@ myWorkspaces = clickable . (map xmobarEscape)
                       (i,ws) <- zip [1..9] l,
                       let n = i ]
 
+
 myManageHook :: XMonad.Query (Data.Monoid.Endo WindowSet)
 myManageHook = composeAll
      -- using 'doShift ( myWorkspaces !! 7)' sends program to workspace 8!
@@ -325,7 +330,7 @@ myManageHook = composeAll
      , (className =? "firefox" <&&> resource =? "Dialog") --> doFloat  -- Float Firefox Dialog
      , (title=? "Brave-browser" <&&> resource =? "Dialog") --> doFloat  -- Float Firefox Dialog
      , title=? "PulseEffects" --> doShift (myWorkspaces !! 5)
-     , title=? "spotify" --> doShift (myWorkspaces !! 5)
+     , className=? "Spotify" --> (customFloating $ W.RationalRect 0.5025 0.01 0.4925 0.98)
      , (title=? "Zoom - Licensed Account" <||> className =? "zoom")--> doShift (myWorkspaces !! 6)
      ] <+> namedScratchpadManageHook myScratchPads 
 
@@ -434,6 +439,7 @@ main = do
                                <+> serverModeEventHookF "XMONAD_PRINT" (io . putStrLn)
                                <+> docksEventHook
                                <+> fullscreenEventHook
+                               <+> dynamicPropertyChange "WM_NAME" (className =? "Spotify" --> (customFloating $ W.RationalRect 0.05 0.05 0.9 0.9))
         , modMask            = myModMask
         , terminal           = myTerminal
         , startupHook        = myStartupHook
