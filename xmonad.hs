@@ -166,7 +166,7 @@ windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace
 myStartupHook :: X ()
 myStartupHook = do
           spawnOnce "picom --config /home/sam/.config/picom/picom.conf &"
-          spawnOnce "xrandr --output DP-4 --mode 2560x1440 --output DP-0 --mode 1920x1200 --left-of DP-4"
+          spawnOnce "xrandr --output DP-4 --mode 2560x1440 --primary --output DP-0 --mode 1920x1200 --left-of DP-4"
           spawnOnce "/usr/bin/dunst &"
           spawnOnce "xsetroot -cursor_name left_ptr &"
           spawnOnce "nitrogen --restore &"
@@ -307,7 +307,7 @@ xmobarEscape = concatMap doubleLts
 myWorkspaces :: [String]
 myWorkspaces = clickable . (map xmobarEscape)
                -- $ ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
-               $ ["1:dev", "2:www", "3:sys", "4:doc", "5:chat", "6:mus", "7:call","8:vbox"]
+               $ ["1:dev", "2:www", "3:sys", "4:doc", "5:chat", "6:mus", "7:call","8:pdf","9:ssh"]
   where
         clickable l = [ "<action=xdotool key super+" ++ show (n) ++ "> " ++ ws ++ " </action>" |
                       (i,ws) <- zip [1..9] l,
@@ -384,10 +384,10 @@ myKeys =
         , ("M-<Space>", sendMessage (MT.Toggle NBFULL) >> sendMessage ToggleStruts) -- Toggles noborder/full
         , ("M-S-<Space>", sendMessage ToggleStruts)         -- Toggles struts
         , ("M-S-n", sendMessage $ MT.Toggle NOBORDERS)      -- Toggles noborder
-        , ("M-<KP_Plus>", sendMessage (IncMasterN 1))   -- Increase number of clients in master pane
-        , ("M-<KP_Divide>", sendMessage (IncMasterN (-1)))  -- Decrease number of clients in master pane
-        , ("M-S-<KP_Multiply>", increaseLimit)              -- Increase number of windows
-        , ("M-S-<KP_Divide>", decreaseLimit)                -- Decrease number of windows
+        , ("M-S-=", sendMessage (IncMasterN 1))   -- Increase number of clients in master pane
+        , ("M-S-/", sendMessage (IncMasterN (-1)))  -- Decrease number of clients in master pane
+        , ("M-S-<Up>", increaseLimit)              -- Increase number of windows
+        , ("M-S-<Down>", decreaseLimit)                -- Decrease number of windows
 
         , ("M-h", sendMessage Shrink)                       -- Shrink horiz window width
         , ("M-l", sendMessage Expand)                       -- Expand horiz window width
@@ -409,7 +409,8 @@ myKeys =
 
     --- My Applications (Super+Alt+Key)
         , ("M-S-w", spawn myBrowser)
-        , ("M-C-<Space>", spawn "dmenu_run -m 1")
+        , ("M-C-<Space>", spawn "dmenu_run -m 0 -y 4 -l 1")
+        , ("M1-<Tab>", spawn "rofi -show window")
         , ("<Pause>", spawn "flameshot gui")
         -- , ("<XF86AudioMute>",   spawn "amixer set Master toggle")  -- Bug prevents it from toggling correctly in 12.04.
         , ("<XF86AudioLowerVolume>", spawn "amixer sset Master 5%- unmute")
@@ -439,7 +440,7 @@ main = do
                                <+> serverModeEventHookF "XMONAD_PRINT" (io . putStrLn)
                                <+> docksEventHook
                                <+> fullscreenEventHook
-                               <+> dynamicPropertyChange "WM_NAME" (className =? "Spotify" --> (customFloating $ W.RationalRect 0.05 0.05 0.9 0.9))
+                               <+> dynamicPropertyChange "WM_NAME" (className =? "Spotify" --> (customFloating $ W.RationalRect 0.05 0.05 0.9 0.9)) --Annoyign hack to get spotify scratchpad to float.
         , modMask            = myModMask
         , terminal           = myTerminal
         , startupHook        = myStartupHook
