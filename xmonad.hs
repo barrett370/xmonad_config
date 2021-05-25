@@ -15,7 +15,6 @@ import XMonad
       className,
       composeAll,
       doFloat,
-      Event,
       doShift,
       resource,
       stringProperty,
@@ -46,22 +45,16 @@ import qualified XMonad.StackSet as W
     -- Actions
 import XMonad.Actions.CopyWindow (kill1, killAllOtherCopies)
 import XMonad.Actions.CycleWS (moveTo, shiftTo, WSType(..), nextScreen, prevScreen, nextWS, prevWS)
-import XMonad.Actions.GridSelect ( def, colorRangeFromClassName )
+import XMonad.Actions.GridSelect ( colorRangeFromClassName )
 import XMonad.Actions.MouseResize ( mouseResize )
 import XMonad.Actions.Promote ( promote )
 import XMonad.Actions.RotSlaves (rotSlavesDown, rotAllDown)
-import qualified XMonad.Actions.TreeSelect as TS
-import XMonad.Actions.WindowGo (runOrRaise)
 import XMonad.Actions.WithAll (sinkAll, killAll)
-import qualified XMonad.Actions.Search as S
 
     -- Data
-import Data.Char (isSpace)
-import Data.Monoid ( Endo,All )
-import Data.Maybe (isJust)
+import Data.Monoid ( Endo)
 import Data.Tree ()
-import qualified Data.Map as M
-import qualified Data.Text as Text
+import Data.List 
 
     -- Hooks
 import XMonad.Hooks.DynamicLog (dynamicLogWithPP, wrap, xmobarPP, xmobarColor, shorten, PP(..))
@@ -86,7 +79,7 @@ import XMonad.Layout.ResizableTile
     ( MirrorResize(MirrorExpand, MirrorShrink),
       ResizableTall(ResizableTall) )
 import XMonad.Layout.Tabbed
-    (TabbedDecoration,  def,
+    (TabbedDecoration,
       shrinkText,
       tabbed,
       Theme(fontName, activeColor, inactiveColor, activeBorderColor,
@@ -99,9 +92,8 @@ import XMonad.Layout.LimitWindows (LimitWindows, limitWindows, increaseLimit, de
 import XMonad.Layout.Magnifier (Magnifier,  magnifier )
 import XMonad.Layout.MultiToggle (HCons, MultiToggle, mkToggle, single, EOT(EOT), (??))
 import XMonad.Layout.MultiToggle.Instances (StdTransformers(NBFULL, MIRROR, NOBORDERS))
-import XMonad.Layout.NoBorders ( noBorders )
+import XMonad.Layout.NoBorders ( noBorders, smartBorders )
 import XMonad.Layout.Renamed (renamed, Rename(Replace))
-import XMonad.Layout.ShowWName ( def )
 import XMonad.Layout.Spacing
     ( spacingRaw, Border(Border), Spacing )
 import XMonad.Layout.WindowArranger (WindowArranger, windowArrange, WindowArrangerMsg(..))
@@ -109,15 +101,13 @@ import qualified XMonad.Layout.ToggleLayouts as T (toggleLayouts, ToggleLayout(T
 import qualified XMonad.Layout.MultiToggle as MT (Toggle(..))
 
     -- Prompt
-import XMonad.Prompt ( def, Direction1D(Prev, Next) )
+import XMonad.Prompt ( Direction1D(Prev, Next) )
 import XMonad.Prompt.Input ()
 import XMonad.Prompt.FuzzyMatch ()
 import XMonad.Prompt.Man ()
 import XMonad.Prompt.Pass ()
-import XMonad.Prompt.Shell (shellPrompt)
 import XMonad.Prompt.Ssh ()
 import XMonad.Prompt.XMonad ()
-import Control.Arrow (first)
 
     -- Utilities
 import XMonad.Util.EZConfig (additionalKeysP)
@@ -126,7 +116,7 @@ import XMonad.Util.NamedScratchpad
       namedScratchpadAction,
       namedScratchpadManageHook,
       NamedScratchpad(NS) )
-import XMonad.Util.Run (runProcessWithInput, safeSpawn, spawnPipe)
+import XMonad.Util.Run (spawnPipe)
 import XMonad.Util.SpawnOnce ( spawnOnce )
 import XMonad.Layout.Decoration (DefaultShrinker, Decoration)
 import XMonad.Layout.Simplest (Simplest)
@@ -142,20 +132,19 @@ myTerminal = "st"   -- Sets default terminal
 
 myBrowser :: String
 myBrowser = "brave"               -- Sets qutebrowser as browser for tree select
--- myBrowser = myTerminal ++ " -e lynx " -- Sets lynx as browser for tree select
 
 myEditor :: String
-myEditor = myTerminal ++ "-e nvim"  -- Sets emacs as editor for tree select
--- myEditor = myTerminal ++ " -e nvim "    -- Sets vim as editor for tree select
+myEditor = myTerminal ++ " -e nvim "    -- Sets vim as editor for tree select
 
 myBorderWidth :: Dimension
-myBorderWidth =  3        -- Sets border width for windows
+myBorderWidth =  1        -- Sets border width for windows
 
 myNormColor :: String
 myNormColor   = "#292d3e"  -- Border color of normal windows
 
 myFocusColor :: String
 myFocusColor  = "#bbc5ff"  -- Border color of focused windows
+--myFocusColor  = myNormColor -- Border color of focused windows
 
 altMask :: KeyMask
 altMask = mod1Mask         -- Setting this for use in xprompts
@@ -166,6 +155,7 @@ windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace
 myStartupHook :: X ()
 myStartupHook = do
           spawnOnce "picom --config /home/sam/.config/picom/picom.conf &"
+          spawnOnce "sudo liquidctl initialize all"
           spawnOnce "xrandr --output DP-4 --mode 2560x1440 --primary --output DP-0 --mode 1920x1200 --left-of DP-4"
           spawnOnce "/usr/bin/dunst &"
           spawnOnce "xsetroot -cursor_name left_ptr &"
@@ -196,7 +186,7 @@ myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm
                  l = 0.95 -w
     -- spawnSpotify  = "st -c SpotifyTui -T foo -e spt"
     spawnSpotify = "spotify"
-    -- findSpotify = className =? "SpotifyTui"
+    --findSpotify = className =? "SpotifyTui"
     findSpotify = className =? "Spotify"
     manageSpotify = customFloating $ W.RationalRect l t w h
                where
@@ -220,10 +210,11 @@ myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm
                  w = 0.9
                  t = 0.95 -h
                  l = 0.95 -w
+
 mySpacing :: Integer -> l a -> XMonad.Layout.LayoutModifier.ModifiedLayout Spacing l a
 mySpacing i = spacingRaw False (Border i i i i) True (Border i i i i) True
 
--- Below is a variation of the above except no borders are applied
+-- Below is a variation of the above except no myNormColor borders are applied
 -- if fewer than two windows. So a single window has no gaps.
 mySpacing' :: Integer -> l a -> XMonad.Layout.LayoutModifier.ModifiedLayout Spacing l a
 mySpacing' i = spacingRaw True (Border i i i i) True (Border i i i i) True
@@ -284,7 +275,7 @@ tabs     = renamed [Replace "tabs"]
                       , inactiveTextColor   = "#d0d0d0"
                       }
 -- The layout hook
-myLayoutHook = avoidStruts $ mouseResize $ windowArrange $ T.toggleLayouts floats $ 
+myLayoutHook = avoidStruts $ mouseResize $ windowArrange $ T.toggleLayouts floats $ smartBorders $
                mkToggle (NBFULL ?? NOBORDERS ?? EOT) myDefaultLayout
              where
                -- I've commented out the layouts I don't use.
@@ -313,6 +304,7 @@ myWorkspaces = clickable . (map xmobarEscape)
                       (i,ws) <- zip [1..9] l,
                       let n = i ]
 
+q ~? x  = fmap (x `isInfixOf`) q
 
 myManageHook :: XMonad.Query (Data.Monoid.Endo WindowSet)
 myManageHook = composeAll
@@ -330,8 +322,11 @@ myManageHook = composeAll
      , (className =? "firefox" <&&> resource =? "Dialog") --> doFloat  -- Float Firefox Dialog
      , (title=? "Brave-browser" <&&> resource =? "Dialog") --> doFloat  -- Float Firefox Dialog
      , title=? "PulseEffects" --> doShift (myWorkspaces !! 5)
+     , title~? "Figure " --> doFloat
+     , title~? "Figure " --> doShift (myWorkspaces !! 5)
      , className=? "Spotify" --> (customFloating $ W.RationalRect 0.5025 0.01 0.4925 0.98)
      , (title=? "Zoom - Licensed Account" <||> className =? "zoom")--> doShift (myWorkspaces !! 6)
+     , (title=? "Zoom - Licensed Account" <||> className =? "zoom")--> doFloat
      ] <+> namedScratchpadManageHook myScratchPads 
 
 
@@ -339,13 +334,15 @@ myLogHook :: X ()
 myLogHook = fadeInactiveLogHook fadeAmount
     where fadeAmount = 1
 
+
 myKeys :: [(String, X ())]
 myKeys =
     -- Xmonad
         [ ("M-C-r", spawn "xmonad --recompile")      -- Recompiles xmonad
         , ("M-S-r", spawn "xmonad --restart")        -- Restarts xmonad
         , ("M-S-q", io exitSuccess)                  -- Quits xmonad
-        , ("M-C-l", spawn "slock")
+        --, ("M-C-l", spawn "slock")
+        , ("M-C-<Del>", spawn "dm-tool lock")
 
 
     -- Open my preferred terminal
@@ -403,25 +400,26 @@ myKeys =
     -- Scratchpads
         , ("M-C-<Return>", namedScratchpadAction myScratchPads "terminal")
         , ("M-C-m", namedScratchpadAction myScratchPads "spotify")
-        , ("M-C-e", namedScratchpadAction myScratchPads "htop")
+        , ("M-C-h", namedScratchpadAction myScratchPads "htop")
         , ("M-C-z", namedScratchpadAction myScratchPads "zotero")
 
 
     --- My Applications (Super+Alt+Key)
         , ("M-S-w", spawn myBrowser)
+        , ("M-S-e", spawn "emacs")
         , ("M-C-<Space>", spawn "dmenu_run -m 0 -y 4 -l 1")
         , ("M1-<Tab>", spawn "rofi -show window")
         , ("<Pause>", spawn "flameshot gui")
         -- , ("<XF86AudioMute>",   spawn "amixer set Master toggle")  -- Bug prevents it from toggling correctly in 12.04.
         , ("<XF86AudioLowerVolume>", spawn "amixer sset Master 5%- unmute")
         , ("<XF86AudioRaiseVolume>", spawn "amixer sset Master 5%+ unmute")
-        , ("<XF86AudioNext>", spawn "spt-check next-song")
-        , ("<XF86AudioPrev>", spawn "spt-check prev-song")
-        , ("<XF86AudioStop>", spawn "spt-check play-pause")
+
+        , ("<XF86AudioNext>", spawn "/home/sam/applications/spt-check next-song")
+        , ("<XF86AudioPrev>", spawn "/home/sam/applications/spt-check prev-song")
+        , ("<XF86AudioStop>", spawn "/home/sam/applications/spt-check play-pause")
         ]
         -- The following lines are needed for named scratchpads.
           where nonNSP          = WSIs (return (\ws -> W.tag ws /= "nsp"))
-                nonEmptyNonNSP  = WSIs (return (\ws -> isJust (W.stack ws) && W.tag ws /= "nsp"))
 
 main :: IO ()
 main = do
