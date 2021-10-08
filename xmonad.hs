@@ -128,22 +128,22 @@ myModMask :: KeyMask
 myModMask = mod4Mask       -- Sets modkey to super/windows key
 
 myTerminal :: String
-myTerminal = "st"   -- Sets default terminal
+myTerminal = "kitty"   -- Sets default terminal
 
 myBrowser :: String
-myBrowser = "brave"               -- Sets qutebrowser as browser for tree select
+myBrowser = "firefox"               -- Sets qutebrowser as browser for tree select
 
 myEditor :: String
 myEditor = myTerminal ++ " -e nvim "    -- Sets vim as editor for tree select
 
 myBorderWidth :: Dimension
-myBorderWidth =  1        -- Sets border width for windows
+myBorderWidth =  2        -- Sets border width for windows
 
 myNormColor :: String
 myNormColor   = "#292d3e"  -- Border color of normal windows
 
 myFocusColor :: String
-myFocusColor  = "#bbc5ff"  -- Border color of focused windows
+myFocusColor  = "#00FFFF"  -- Border color of focused windows
 --myFocusColor  = myNormColor -- Border color of focused windows
 
 altMask :: KeyMask
@@ -154,12 +154,14 @@ windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace
 
 myStartupHook :: X ()
 myStartupHook = do
-          spawnOnce "picom --config /home/sam/.config/picom/picom.conf &"
-          spawnOnce "sudo liquidctl initialize all"
-          spawnOnce "xrandr --output DP-4 --mode 2560x1440 --primary --output DP-0 --mode 1920x1200 --left-of DP-4"
+          --spawnOnce "picom --config /home/sam/.config/picom/picom.conf &"
+          spawnOnce "picom -b &"
+          spawnOnce "setxkbmap -option caps:escape"
+          spawnOnce "xrandr --output DP-2 --mode 2560x1440 --primary --output DP-0 --mode 1920x1200 --left-of DP-2"
           spawnOnce "/usr/bin/dunst &"
-          spawnOnce "xsetroot -cursor_name left_ptr &"
-          spawnOnce "nitrogen --restore &"
+          -- spawnOnce "xsetroot -cursor_name left_ptr &"
+          -- spawnOnce "nitrogen --restore &"
+          spawnOnce "feh --bg-scale $HOME/.wallpapers/0032.jpg"
 
 myColorizer :: Window -> Bool -> X (String, String)
 myColorizer = colorRangeFromClassName
@@ -173,10 +175,10 @@ myScratchPads :: [NamedScratchpad]
 myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm
                 , NS "spotify" spawnSpotify findSpotify manageSpotify
                 , NS "htop"    spawnHtop findHtop manageHtop
-                , NS "zotero"    spawnZotero findZotero manageZotero
+                -- , NS "zotero"    spawnZotero findZotero manageZotero
                 ]
   where
-    spawnTerm  = myTerminal ++ " -c Scratchpad"
+    spawnTerm  = myTerminal ++ " --class Scratchpad"
     findTerm   = className =? "Scratchpad"
     manageTerm = customFloating $ W.RationalRect l t w h
                where
@@ -194,7 +196,7 @@ myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm
                  w = 0.9
                  t = 0.95 -h
                  l = 0.95 -w
-    spawnHtop = myTerminal ++ " -c Htop -e htop"
+    spawnHtop = myTerminal ++ " --class Htop -e htop"
     findHtop = className =? "Htop"
     manageHtop = customFloating $ W.RationalRect l t w h
                where
@@ -298,7 +300,7 @@ xmobarEscape = concatMap doubleLts
 myWorkspaces :: [String]
 myWorkspaces = clickable . (map xmobarEscape)
                -- $ ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
-               $ ["1:dev", "2:www", "3:sys", "4:doc", "5:chat", "6:mus", "7:call","8:pdf","9:ssh"]
+               $ ["1:dev", "2:www", "3:sys", "4:dev2", "5:chat", "6:ide", "7:call","8:doc","9:ssh"]
   where
         clickable l = [ "<action=xdotool key super+" ++ show (n) ++ "> " ++ ws ++ " </action>" |
                       (i,ws) <- zip [1..9] l,
@@ -312,7 +314,8 @@ myManageHook = composeAll
      -- I'm doing it this way because otherwise I would have to write out
      -- the full name of my workspaces.
      [
-       className=? "firefox"      --> doShift ( myWorkspaces !! 1 )
+       className=? "Firefox"      --> doShift ( myWorkspaces !! 1 ),
+       className=? "Google-chrome"      --> doShift ( myWorkspaces !! 6 )
      , className=? "Brave-browser"      --> doShift ( myWorkspaces !! 1 )
      , (className=? "Brave-browser"  <&&>   (stringProperty "WM_WINDOW_ROLE")=? "pop-up")    -->  doFloat
      , className=?"Microsoft Teams - Preview"--> doShift (myWorkspaces !! 4)
@@ -325,8 +328,6 @@ myManageHook = composeAll
      , title~? "Figure " --> doFloat
      , title~? "Figure " --> doShift (myWorkspaces !! 5)
      , className=? "Spotify" --> (customFloating $ W.RationalRect 0.5025 0.01 0.4925 0.98)
-     , (title=? "Zoom - Licensed Account" <||> className =? "zoom")--> doShift (myWorkspaces !! 6)
-     , (title=? "Zoom - Licensed Account" <||> className =? "zoom")--> doFloat
      ] <+> namedScratchpadManageHook myScratchPads 
 
 
@@ -407,12 +408,12 @@ myKeys =
     --- My Applications (Super+Alt+Key)
         , ("M-S-w", spawn myBrowser)
         , ("M-S-e", spawn "emacs")
-        , ("M-C-<Space>", spawn "dmenu_run -m 0 -y 4 -l 1")
+        , ("M-C-<Space>", spawn "dmenu_run -m 0 -l 1")
         , ("M1-<Tab>", spawn "rofi -show window")
-        , ("<Pause>", spawn "flameshot gui")
+        , ("<Print>", spawn "flameshot gui")
         -- , ("<XF86AudioMute>",   spawn "amixer set Master toggle")  -- Bug prevents it from toggling correctly in 12.04.
-        , ("<XF86AudioLowerVolume>", spawn "amixer sset Master 5%- unmute")
-        , ("<XF86AudioRaiseVolume>", spawn "amixer sset Master 5%+ unmute")
+        , ("<XF86AudioLowerVolume>", spawn "amixer -D pulse sset Master 5%- unmute")
+        , ("<XF86AudioRaiseVolume>", spawn "amixer -D pulse sset Master 5%+ unmute")
 
         , ("<XF86AudioNext>", spawn "/home/sam/applications/spt-check next-song")
         , ("<XF86AudioPrev>", spawn "/home/sam/applications/spt-check prev-song")
